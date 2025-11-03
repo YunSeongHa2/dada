@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Scratch Lottery Event - Shapes</title>
+  <style>
+    body { font-family: 'Comic Sans MS', 'Comic Sans', cursive; text-align: center; background: #f7f7f7; padding: 20px; }
+    .ticket { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
+    .cell { position: relative; width: 100px; height: 100px; background: #ddd; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 50px; cursor: pointer; }
+    canvas { position: absolute; top: 0; left: 0; }
+    h1, h2, button {
+      font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+    }
+    #result { margin-top: 20px; font-size: 24px; font-weight: bold; }
+  </style>
+</head>
+<body>
+<h1 id="homeButton">🎉 Scratch Lottery Event 🎉</h1>
+<p>If 3 shapes are the same after scratching, you win!</p>
+<button onclick="generateTicket()">Create ticket</button>
+<div class="ticket" id="ticket"></div>
+<div id="result"></div>
+
+<script>
+  document.getElementById('homeButton').addEventListener('click', function() {
+    window.location.href = '/main';
+  });
+  // const shapes = ['🍒','⭐','🍀','🔔','💎','🍋'];
+  const shapes = ['🍒','⭐','🍀','💎'];
+  let currentShapes = [];
+
+  function pickRandomShapes() {
+    currentShapes = [];
+    for(let i=0;i<3;i++) {
+      const idx = Math.floor(Math.random()*shapes.length);
+      currentShapes.push(shapes[idx]);
+    }
+  }
+
+  function generateTicket() {
+    pickRandomShapes();
+    const ticket = document.getElementById('ticket');
+    ticket.innerHTML = '';
+    document.getElementById('result').textContent = '';
+
+    currentShapes.forEach(shape => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.textContent = shape;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 100; canvas.height = 100;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#999';
+      ctx.fillRect(0,0,100,100);
+      ctx.fillStyle = '#ccc';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('scratch it', 50, 55);
+
+      let isDrawing = false;
+      function scratch(e){
+        if(!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX||e.touches[0].clientX) - rect.left;
+        const y = (e.clientY||e.touches[0].clientY) - rect.top;
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(x,y,15,0,Math.PI*2);
+        ctx.fill();
+        checkReveal();
+      }
+
+      function checkReveal(){
+        const imgData = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+        let cleared = 0;
+        for(let i=3;i<imgData.length;i+=4){ if(imgData[i]===0) cleared++; }
+        const pct = cleared/(imgData.length/4);
+        if(pct>0.5){
+          canvas.style.display = 'none';
+          checkResult();
+        }
+      }
+
+      function checkResult(){
+        const allCleared = Array.from(document.querySelectorAll('.cell canvas')).every(c=>c.style.display==='none');
+        if(allCleared){
+          const uniqueShapes = new Set(currentShapes);
+          const resultDiv = document.getElementById('result');
+          if(uniqueShapes.size===1){
+            resultDiv.textContent = '🎊 Won! All shapes are the same! 🎊';
+            resultDiv.style.color='green';
+          } else {
+            resultDiv.textContent = '😢 Unfortunately, You didn\'t win.';
+            resultDiv.style.color='red';
+          }
+        }
+      }
+
+      canvas.addEventListener('mousedown',()=>isDrawing=true);
+      canvas.addEventListener('mouseup',()=>isDrawing=false);
+      canvas.addEventListener('mousemove',scratch);
+      canvas.addEventListener('touchstart',()=>isDrawing=true);
+      canvas.addEventListener('touchend',()=>isDrawing=false);
+      canvas.addEventListener('touchmove',scratch);
+
+      cell.appendChild(canvas);
+      ticket.appendChild(cell);
+    });
+  }
+</script>
+</body>
+</html>

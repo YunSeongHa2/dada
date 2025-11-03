@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<link rel="icon" href="/images/favicon.ico">
+
+	<meta property="og:title" content="Dada Store">
+	<meta property="og:description" content="Welcome to Diane Event Shop">
+	<meta property="og:image" content="https://www.dada-event.store/images/ms-icon-310x310.png">
+	<meta property="og:url" content="https://www.dada-event.store/">
+	<meta property="og:type" content="website">
+
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Diane Event Shop</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Poor+Story&display=swap');
+
+		body {
+			font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+			text-align: center;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin: 0;
+			padding: 0;
+			background-color: #f9f9f9;
+		}
+
+		button {
+			font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+			font-size: 20px;
+			background-color: #f5e6cc;
+			color: #5a3e36;
+			border: none;
+			padding: 15px 30px;
+			border-radius: 10px;
+			cursor: pointer;
+			transition: background-color 0.3s ease, transform 0.2s ease;
+			width: 100%;
+			max-width: 300px; /* 버튼 크기 제한 */
+		}
+
+		button:hover {
+			background-color: #e0d1b4;
+			transform: scale(1.05);
+		}
+
+		button:active {
+			background-color: #cbb59e;
+			transform: scale(0.95);
+		}
+
+		#container {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 20px;
+			width: 100%;
+			max-width: 600px;
+			margin-top: 50px;
+		}
+
+		/* 버튼이 하나만 있을 때 */
+		#container:has(button:only-child) {
+			display: flex;
+			justify-content: center;
+		}
+		h1 {
+			cursor: pointer;
+		}
+
+		@media screen and (max-width: 500px) {
+			#container {
+				grid-template-columns: 1fr;
+				justify-items: center;
+			}
+		}
+	</style>
+</head>
+<body>
+<h1>♥Welcome to Diane Event Shop♥</h1>
+<div id="container">
+	<button id="v1Button">Number Game</button>
+<!--	<button id="v2Button">Shape Game</button>-->
+	<button id="v3Button">Alphabet Game</button>
+<!--	<button id="v4Button">Super Mode</button>-->
+	<button id="v5Button">Lotto Game</button>
+	<button id="v6Button">Wheel Game</button>
+	<button id="v7Button">Memory Game</button>
+</div>
+
+<script>
+
+	document.getElementById('v1Button').addEventListener('click', function() {
+		window.location.href = '/basic';
+	});
+
+	// document.getElementById('v2Button').addEventListener('click', function() {
+	// 	window.location.href = '/diane/v2';
+	// });
+
+	document.getElementById('v3Button').addEventListener('click', function() {
+		window.location.href = '/abc';
+	});
+
+	// document.getElementById('v4Button').addEventListener('click', function() {
+	// 	window.location.href = '/diane/v4';
+	// });
+
+	document.getElementById('v5Button').addEventListener('click', function() {
+		window.location.href = '/lotto';
+	});
+
+	document.getElementById('v6Button').addEventListener('click', function() {
+		window.location.href = '/wheel';
+	});
+
+	document.getElementById('v7Button').addEventListener('click', function() {
+		window.location.href = '/memory';
+	});
+
+</script>
+
+</body>
+</html>

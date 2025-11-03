@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Dynamic Spin Wheel</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+      text-align: center;
+      background: #ffffff;
+      padding: 20px;
+    }
+
+    #wheelContainer {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      margin: 40px auto;
+    }
+
+    canvas { width: 100%; height: 100%; }
+
+    #spinButton {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #ff9966, #ff5e62);
+      color: white;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    #spinButton:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 10px rgba(0,0,0,0.25);
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      font-family: 'Nanum Gothic', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Comic Sans MS', cursive;
+    }
+
+    #inputs {
+      margin-top: 20px;
+    }
+
+    #inputs input {
+      padding: 5px;
+      font-size: 16px;
+      margin-right: 5px;
+    }
+
+    #addButton {
+      padding: 6px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    #addButton:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 8px rgba(0,0,0,0.25);
+    }
+
+    #arrow {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 30px;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<h1 id="homeButton">🎡 Dynamic Spin Wheel 🎡</h1>
+
+<div id="inputs">
+  <input type="text" id="itemInput" placeholder="Enter item and press Add">
+  <button id="addButton" onclick="addItem()">Add</button>
+</div>
+
+<div id="wheelContainer">
+  <div id="arrow">▼</div>
+  <canvas id="wheel" width="400" height="400"></canvas>
+</div>
+
+<button id="spinButton">Spin!</button>
+<div id="result"></div>
+
+<script>
+  document.getElementById('homeButton').addEventListener('click', function() {
+    window.location.href = '/main';
+  });
+
+  const input = document.getElementById('itemInput');
+  input.addEventListener('keydown', function(event) {
+    if(event.key === 'Enter') { // 엔터키 감지
+      addItem();
+    }
+  });
+
+  const wheelCanvas = document.getElementById('wheel');
+  const ctx = wheelCanvas.getContext('2d');
+  const radius = wheelCanvas.width / 2;
+  const center = { x: radius, y: radius };
+
+  let items = []; // 동적으로 추가될 항목
+
+  // 초기 빈 돌림판 (배경 흰색)
+  function drawEmptyWheel() {
+    ctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height);
+    ctx.beginPath();
+    ctx.arc(center.x, center.y, radius, 0, 2*Math.PI);
+    ctx.fillStyle = "#ffffff"; // 흰색으로 변경
+    ctx.fill();
+    ctx.strokeStyle = "#aaa"; // 테두리는 연한 회색
+    ctx.stroke();
+  }
+  drawEmptyWheel();
+
+  function drawWheel(rotation=0) {
+    ctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height);
+    const colorPalette = ['#ff9999','#99ccff','#ffff99','#99ff99','#ffcc99','#cc99ff','#ff99cc','#99ffff'];
+
+    const len = items.length || 1;
+    const anglePerItem = 2 * Math.PI / len;
+
+    for(let i=0; i<len; i++){
+      const startAngle = i * anglePerItem;
+      const endAngle = startAngle + anglePerItem;
+
+      ctx.beginPath();
+      ctx.moveTo(center.x, center.y);
+      ctx.arc(center.x, center.y, radius, startAngle + rotation, endAngle + rotation);
+      ctx.fillStyle = items[i] ? colorPalette[i % colorPalette.length] : "#ffffff"; // 빈 칸도 흰색
+      ctx.fill();
+      ctx.strokeStyle = "#aaa";
+      ctx.stroke();
+
+      if(items[i]){
+        ctx.save();
+        ctx.translate(center.x, center.y);
+        const angle = (startAngle + endAngle)/2 + rotation;
+        ctx.rotate(angle);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#000";
+        ctx.font = "16px Arial";
+        ctx.fillText(items[i], radius - 10, 5);
+        ctx.restore();
+      }
+    }
+  }
+
+  function addItem() {
+    const input = document.getElementById('itemInput');
+    const value = input.value.trim();
+    if(value && !items.includes(value)){
+      items.push(value);
+      input.value = '';
+      drawWheel(); // 입력 시 바로 표시
+    }
+  }
+
+  // Spin
+  let isSpinning = false;
+  let currentRotation = 0;
+
+  function spinWheel() {
+    if(isSpinning || items.length === 0) return;
+    isSpinning = true;
+    document.getElementById('result').textContent = '';
+
+    const spins = Math.random() * 2 * Math.PI + 10 * 2 * Math.PI;
+    const duration = 4000;
+    const startTime = performance.now();
+
+    function animate(time) {
+      const elapsed = time - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      currentRotation = spins * easeOut;
+
+      drawWheel(currentRotation);
+
+      if(progress < 1){
+        requestAnimationFrame(animate);
+      } else {
+        isSpinning = false;
+        showResult();
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+
+  function showResult() {
+    if(items.length === 0) return;
+
+    const anglePerItem = 2 * Math.PI / items.length;
+    let rotation = currentRotation % (2 * Math.PI);
+    let pointerAngle = (3*Math.PI/2 - rotation + 2*Math.PI) % (2*Math.PI);
+    let index = Math.floor(pointerAngle / anglePerItem);
+    if(index >= items.length) index = items.length - 1;
+
+    document.getElementById('result').textContent = `🎉 Result: ${items[index]} 🎉`;
+  }
+
+  document.getElementById('spinButton').addEventListener('click', spinWheel);
+
+</script>
+</body>
+</html>

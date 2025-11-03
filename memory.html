@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>shape memory game</title>
+  <style>
+    body { text-align: center; font-family: 'Comic Sans MS', 'Comic Sans', cursive; background: #ffffff; padding: 20px; }
+    #shapeContainer {
+      display: flex;
+      flex-wrap: wrap;          /* 여러 줄로 나눠서 배치 */
+      justify-content: center;  /* 줄 안에서 가로 중앙 정렬 */
+      gap: 20px;
+      margin: 30px auto 0;      /* 위쪽 여백 + 좌우 자동 중앙 */
+      max-width: 500px;         /* 한 줄 최대 폭, 필요시 조정 */
+    }
+    .shape {
+      width: 80px; height: 80px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px; border: 2px solid #333; border-radius: 10px;
+      user-select: none;
+      transition: transform 0.2s;
+    }
+    .shape:hover { transform: scale(1.1); }
+    #startButton { margin-top: 20px; padding: 10px 20px; font-size: 18px; cursor: pointer;
+      border: none; border-radius: 8px; background: linear-gradient(135deg,#6a11cb,#2575fc); color:white;}
+    #result { margin-top: 20px; font-size: 24px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h1 id="homeButton">🧠 shape memory game</h1>
+<p>Remember the shape patterns that appear briefly on the screen and click them in order!</p>
+<div id="shapeContainer"></div>
+<button id="startButton">Start</button>
+<div id="result"></div>
+
+<script>
+  document.getElementById('homeButton').addEventListener('click', function() {
+    window.location.href = '/main';
+  });
+
+  // const shapes = ["▲","■","●","◆","★","☀","☂","☃","✿","✈"]; // 10개 도형
+  // const shapes = ["▲","■","●","◆","★","☀","☂","☃","✿","✈","♫","☯","⚡","❤","☘"];
+  const shapes = [
+    "▲","■","●","◆","★","☀","☂","☃","✿","✈",
+    "♫","☯","⚡","❤","☘","☁","☂","☠","✪","✈"
+  ];
+  let pattern = [];
+  let playerInput = [];
+  let clickable = false;
+
+  const container = document.getElementById('shapeContainer');
+  const resultDiv = document.getElementById('result');
+
+  // 화면에 도형 5개 표시
+  function displayShapes(showPattern=false) {
+    container.innerHTML = '';
+    shapes.forEach((shape, idx) => {
+      const div = document.createElement('div');
+      div.classList.add('shape');
+      div.textContent = shape;
+
+      div.style.background = showPattern && pattern.includes(idx) ? '#ffeb3b' : '#ffffff';
+
+      div.addEventListener('click', () => handleClick(idx));
+      container.appendChild(div);
+    });
+  }
+
+  // 패턴 생성
+  function generatePattern() {
+    pattern = [];
+    while(pattern.length < 5){
+      const idx = Math.floor(Math.random() * shapes.length);
+      if(!pattern.includes(idx)) pattern.push(idx);
+    }
+  }
+
+  // 클릭 처리
+  function handleClick(idx){
+    if(!clickable) return;
+    playerInput.push(idx);
+
+    const divs = document.querySelectorAll('.shape');
+    const clickedDiv = divs[idx];
+
+    // 클릭한 도형 효과: 초록(정답) / 빨강(오답)
+    if(playerInput[playerInput.length-1] === pattern[playerInput.length-1]){
+      clickedDiv.style.background = '#8bc34a'; // 초록
+    } else {
+      clickedDiv.style.background = '#f44336'; // 빨강
+    }
+
+    // 0.5초 후 원래 색으로 돌아가기
+    setTimeout(() => {
+      clickedDiv.style.background = '#ffffff';
+    }, 500);
+
+    // 순서 틀리면 실패
+    if(playerInput[playerInput.length-1] !== pattern[playerInput.length-1]){
+      clickable = false;
+      resultDiv.textContent = "❌ fail! Please try again.";
+      return;
+    }
+
+    // 모두 맞히면 성공
+    if(playerInput.length === pattern.length){
+      clickable = false;
+      resultDiv.textContent = "🎉 success! You remembered!";
+    }
+  }
+
+  // 게임 시작
+  document.getElementById('startButton').addEventListener('click', () => {
+    playerInput = [];
+    resultDiv.textContent = '';
+    generatePattern();
+    clickable = false;
+    container.innerHTML = '';
+
+    let i = 0;
+
+    function highlightNext() {
+      container.innerHTML = '';
+      shapes.forEach((shape, idx) => {
+        const div = document.createElement('div');
+        div.classList.add('shape');
+        div.textContent = shape;
+        if(idx === pattern[i]) div.style.background = '#ffeb3b'; // 현재 순서 강조
+        else div.style.background = '#ffffff';
+        div.addEventListener('click', () => handleClick(idx));
+        container.appendChild(div);
+      });
+
+      i++;
+      if(i < pattern.length) {
+        setTimeout(highlightNext, 700); // 다음 도형 강조
+      } else {
+        // 마지막 강조 후 1초 뒤 전체 흰색으로
+        setTimeout(() => {
+          displayShapes(false);
+          clickable = true;
+        }, 700);
+      }
+    }
+
+    highlightNext(); // 시작
+  });
+
+</script>
+</body>
+</html>
