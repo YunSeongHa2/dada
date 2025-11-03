@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<link rel="icon" href="/images/favicon.ico">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Alphabet Game</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Poor+Story&display=swap');
+
+		body {
+			font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+			text-align: center;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin: 0;
+			padding: 0;
+		}
+
+		h1, h2, button {
+			font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+		}
+		h1 {
+			cursor: pointer;
+		}
+
+		#container {
+			display: flex;
+			flex-direction: row;
+			justify-content: center;
+			align-items: flex-start;
+			gap: 40px;
+			width: 100%;
+			max-width: 800px;
+		}
+
+		.grid {
+			display: grid;
+			grid-template-columns: repeat(10, 1fr);
+			gap: 10px;
+			width: fit-content;
+			margin: 20px auto;
+		}
+
+		.number {
+			width: 40px;
+			height: 40px;
+			line-height: 40px;
+			text-align: center;
+			border: 1px solid black;
+			cursor: pointer;
+			font-size: 18px;
+			border-radius: 12px;
+		}
+
+		.selected {
+			background-color: lightblue;
+		}
+
+		.winner {
+			border: 2px solid rgba(255, 0, 0, 0.6);
+			background-color: rgba(255, 99, 71, 0.4);
+			color: black;
+			font-weight: bold;
+			box-shadow: 0 0 6px rgba(255, 99, 71, 0.5);
+		}
+
+		.matched {
+			background: linear-gradient(135deg, #ff4500, #8b0000);
+			border: 3px solid white;
+			color: white;
+			font-weight: bold;
+			box-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
+			transform: scale(1.15);
+		}
+
+		.circle {
+			color: red;
+			font-weight: bold;
+		}
+
+		#selectedContainer {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin-left: 20px;
+		}
+
+		#selectedNumbersContainer {
+			font-size: 20px;
+			font-weight: bold;
+			margin-top: 10px;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			max-width: 200px;
+			justify-content: center;
+		}
+
+		#selectedNumbers span {
+			display: inline-block;
+			padding: 5px 10px;
+			border-radius: 10px;
+			background-color: #f0f0f0;
+		}
+
+		button {
+			margin: 10px;
+			padding: 12px 20px;
+			font-size: 18px;
+			cursor: pointer;
+			border: none;
+			background-color: #007BFF;
+			color: white;
+			border-radius: 5px;
+			width: 80%;
+			max-width: 300px;
+		}
+
+		#resetButton {
+			background-color: #dc3545;
+		}
+
+		#warning {
+			color: red;
+			font-size: 16px;
+			display: none;
+		}
+
+		/* 모바일 반응형 */
+		@media screen and (max-width: 768px) {
+			#container {
+				flex-direction: column;
+				align-items: center;
+				width: 100%;
+				gap: 20px;
+			}
+
+			.grid {
+				grid-template-columns: repeat(5, 1fr); /* 모바일에서는 5열 */
+				gap: 8px;
+			}
+
+			.number {
+				width: 35px;
+				height: 35px;
+				line-height: 35px;
+				font-size: 16px;
+			}
+
+			button {
+				width: 90%;
+			}
+			body {
+				padding-bottom: 50px; /* 전체 페이지 하단 여백 추가 */
+			}
+
+			#container {
+				margin-bottom: 50px; /* 컨테이너 하단 여백 추가 */
+			}
+		}
+	</style>
+</head>
+<body>
+
+<div id="container">
+	<!-- 숫자 선택 영역 -->
+	<div>
+		<h1 id="homeButton">Alphabet Game</h1>
+		<div class="grid" id="numberGrid"></div>
+		<button id="announceResult">result</button>
+		<button id="resetButton">reset</button>
+		<p id="warning">You must select at least 3!</p>
+	</div>
+
+	<!-- 내가 선택한 숫자 -->
+	<div id="selectedContainer">
+		<h2>the alphabet I chose (<span id="selectedCount">0</span>/3)</h2>
+		<div id="selectedNumbersContainer">
+			<span id="selectedNumbers">doesn't exist</span>
+		</div>
+
+		<h2 id="matchedCount2">correct number</h2>
+		<div id="matchedCount">before presentation</div>
+	</div>
+</div>
+<script>
+
+	const grid = document.getElementById('numberGrid');
+	const selectedNumbersDiv = document.getElementById('selectedNumbers');
+	const selectedCountSpan = document.getElementById('selectedCount');
+	const matchedCountDiv = document.getElementById('matchedCount');
+	const announceResultButton = document.getElementById('announceResult');
+	const resetButton = document.getElementById('resetButton');
+	const warningText = document.getElementById('warning');
+
+	let selectedNumbers = new Set();
+	let winningLetters = [];
+	let announcedLetters = [];
+	let currentIndex = 0;
+
+	// A부터 Z까지 알파벳 생성 (대문자)
+	for (let i = 0; i < 26; i++) {
+		let letter = String.fromCharCode(65 + i); // 65는 'A'
+		const letterDiv = document.createElement('div');
+		letterDiv.textContent = letter;
+		letterDiv.classList.add('number'); // 스타일은 그대로 사용
+		letterDiv.dataset.number = letter;
+
+		letterDiv.addEventListener('click', () => {
+			if (selectedNumbers.has(letter)) {
+				selectedNumbers.delete(letter);
+				letterDiv.classList.remove('selected');
+			} else if (selectedNumbers.size < 3) {
+				selectedNumbers.add(letter);
+				letterDiv.classList.add('selected');
+			}
+			updateSelectedNumbers();
+		});
+
+		grid.appendChild(letterDiv);
+	}
+
+	// 선택한 알파벳 업데이트
+	function updateSelectedNumbers() {
+		let selectedArray = Array.from(selectedNumbers).sort();
+		selectedNumbersDiv.innerHTML = selectedArray.length > 0
+			? selectedArray.map(letter => `<span data-number="${letter}">${letter}</span>`).join(', ')
+			: 'doesn\'t exist';
+
+		// 선택 개수 업데이트
+		selectedCountSpan.textContent = selectedNumbers.size;
+
+		// 최소 5개 선택해야 결과 발표 가능
+		warningText.style.display = selectedNumbers.size < 3 ? 'block' : 'none';
+	}
+
+	// 결과 발표 버튼 클릭 이벤트
+	announceResultButton.addEventListener('click', () => {
+		if (selectedNumbers.size < 3) {
+			warningText.style.display = 'block';
+			return;
+		}
+		warningText.style.display = 'none';
+
+		winningLetters = generateWinningLetters();
+		shuffleArray(winningLetters);
+		announcedLetters = [];
+		currentIndex = 0;
+		matchedCountDiv.textContent = 'presenting...';
+
+		document.querySelectorAll('.number').forEach(num => num.classList.remove('winner', 'matched'));
+
+		announceNextLetter();
+	});
+
+	// 0.35초마다 당첨 알파벳 발표
+	function announceNextLetter() {
+		if (currentIndex < winningLetters.length) {
+			let letter = winningLetters[currentIndex];
+			announcedLetters.push(letter);
+
+			let letterDiv = document.querySelector(`.number[data-number="${letter}"]`);
+			if (letterDiv) letterDiv.classList.add('winner');
+
+			if (selectedNumbers.has(letter)) {
+				letterDiv.classList.add('matched');
+
+				document.querySelectorAll('#selectedNumbers span').forEach(span => {
+					if (span.dataset.number === letter) {
+						span.classList.add('circle');
+						span.innerHTML = `${letter}`; // 동그라미 효과 (CSS에서 처리)
+					}
+				});
+			}
+
+			currentIndex++;
+			setTimeout(announceNextLetter, 350);
+		} else {
+			// 발표 완료 후 맞춘 개수 표시
+			let matchedCount = [...selectedNumbers].filter(letter => winningLetters.includes(letter)).length;
+			matchedCountDiv.textContent = `correct number: ${matchedCount}`;
+		}
+	}
+
+	// 리셋 버튼 클릭 이벤트
+	resetButton.addEventListener('click', () => {
+		selectedNumbers.clear();
+		winningLetters = [];
+		announcedLetters = [];
+		currentIndex = 0;
+
+		// 알파벳 스타일 초기화
+		document.querySelectorAll('.number').forEach(num => num.classList.remove('selected', 'winner', 'matched'));
+
+		// 선택한 알파벳 및 결과 초기화
+		updateSelectedNumbers();
+		matchedCountDiv.textContent = 'before presentation';
+		warningText.style.display = 'none';
+	});
+
+	// 랜덤 당첨 알파벳 생성 (A~Z 중 15개)
+	function generateWinningLetters() {
+		let letters = [];
+		for (let i = 0; i < 26; i++) {
+			letters.push(String.fromCharCode(65 + i));
+		}
+		let winningSet = new Set();
+		while (winningSet.size < 9) {
+			let randomLetter = letters[Math.floor(Math.random() * letters.length)];
+			winningSet.add(randomLetter);
+		}
+		return Array.from(winningSet);
+	}
+
+	// Fisher-Yates 알고리즘으로 배열 섞기
+	function shuffleArray(array) {
+		for (let i = array.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[array[i], array[j]] = [array[j], array[i]];
+		}
+	}
+
+	// 페이지 상단의 제목 클릭 시 이동 (필요시 사용)
+	document.getElementById('homeButton').addEventListener('click', function() {
+		window.location.href = '/main';
+	});
+</script>
+
+</body>
+</html>

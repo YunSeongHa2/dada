@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<link rel="icon" href="/images/favicon.ico">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Number Game</title>
+	<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Cute+Font&display=swap" rel="stylesheet">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Poor+Story&display=swap');
+
+		body {
+			font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+			text-align: center;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin: 0;
+			padding: 0;
+			font-size: 16px;
+		}
+
+		h1, h2, button {
+			font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+		}
+
+		#container {
+			display: flex;
+			flex-direction: row;
+			justify-content: center;
+			align-items: flex-start;
+			gap: 40px;
+			width: 100%;
+			max-width: 800px;
+		}
+
+		.grid {
+			display: grid;
+			grid-template-columns: repeat(10, 1fr);
+			gap: 10px;
+			width: fit-content;
+			margin: 20px auto;
+		}
+
+		.number {
+			width: 40px;
+			height: 40px;
+			line-height: 40px;
+			text-align: center;
+			border: 1px solid black;
+			cursor: pointer;
+			font-size: 18px;
+			border-radius: 12px;
+		}
+
+		.selected {
+			background-color: lightblue;
+		}
+
+		.winner {
+			border: 2px solid rgba(255, 0, 0, 0.6);
+			background-color: rgba(255, 99, 71, 0.4);
+			color: black;
+			font-weight: bold;
+			box-shadow: 0 0 6px rgba(255, 99, 71, 0.5);
+		}
+
+		.matched {
+			background: linear-gradient(135deg, #ff4500, #8b0000);
+			border: 3px solid white;
+			color: white;
+			font-weight: bold;
+			box-shadow: 0 0 15px rgba(255, 255, 255, 0.9);
+			transform: scale(1.15);
+		}
+
+		.circle {
+			color: red;
+			font-weight: bold;
+		}
+
+		#selectedContainer {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin-left: 20px;
+		}
+
+		#selectedNumbersContainer {
+			font-size: 20px;
+			font-weight: bold;
+			margin-top: 10px;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			max-width: 200px;
+			justify-content: center;
+		}
+
+		#selectedNumbers span {
+			display: inline-block;
+			padding: 5px 10px;
+			border-radius: 10px;
+			background-color: #f0f0f0;
+		}
+
+		button {
+			margin: 10px;
+			padding: 12px 20px;
+			font-size: 18px;
+			cursor: pointer;
+			border: none;
+			background-color: #007BFF;
+			color: white;
+			border-radius: 5px;
+			width: 80%;
+			max-width: 300px;
+		}
+
+		#resetButton {
+			background-color: #dc3545;
+		}
+
+		#warning {
+			color: red;
+			font-size: 16px;
+			display: none;
+		}
+		h1 {
+			cursor: pointer;
+		}
+
+		/* 모바일 반응형 */
+		@media screen and (max-width: 768px) {
+			#container {
+				flex-direction: column;
+				align-items: center;
+				width: 100%;
+				gap: 20px;
+			}
+
+			.grid {
+				grid-template-columns: repeat(5, 1fr); /* 모바일에서는 5열 */
+				gap: 8px;
+			}
+
+			.number {
+				width: 35px;
+				height: 35px;
+				line-height: 35px;
+				font-size: 16px;
+			}
+
+			button {
+				width: 90%;
+			}
+			body {
+				padding-bottom: 50px; /* 전체 페이지 하단 여백 추가 */
+			}
+
+			#container {
+				margin-bottom: 50px; /* 컨테이너 하단 여백 추가 */
+			}
+		}
+	</style>
+</head>
+<body>
+
+<div id="container">
+	<!-- 숫자 선택 영역 -->
+	<div>
+		<h1 id="homeButton">Number Game</h1>
+		<div class="grid" id="numberGrid"></div>
+		<button id="announceResult">result</button>
+		<button id="resetButton">reset</button>
+		<p id="warning">You must select at least 5!</p>
+	</div>
+
+	<!-- 내가 선택한 숫자 -->
+	<div id="selectedContainer">
+		<h2>the number I chose (<span id="selectedCount">0</span>/5)</h2>
+		<div id="selectedNumbersContainer">
+			<span id="selectedNumbers">doesn't exist</span>
+		</div>
+
+		<h2 id="matchedCount2">correct number</h2>
+		<div id="matchedCount">before presentation</div>
+	</div>
+</div>
+
+<script>
+	const grid = document.getElementById('numberGrid');
+	const selectedNumbersDiv = document.getElementById('selectedNumbers');
+	const selectedCountSpan = document.getElementById('selectedCount');
+	const matchedCountDiv = document.getElementById('matchedCount');
+	const announceResultButton = document.getElementById('announceResult');
+	const resetButton = document.getElementById('resetButton');
+	const warningText = document.getElementById('warning');
+
+	let selectedNumbers = new Set();
+	let winningNumbers = [];
+	let announcedNumbers = [];
+	let currentIndex = 0;
+
+	// 지정 숫자 생성
+	for (let i = 1; i <= 50; i++) {
+		const numberDiv = document.createElement('div');
+		numberDiv.textContent = i;
+		numberDiv.classList.add('number');
+		numberDiv.dataset.number = i;
+
+		numberDiv.addEventListener('click', () => {
+			if (selectedNumbers.has(i)) {
+				selectedNumbers.delete(i);
+				numberDiv.classList.remove('selected');
+			} else if (selectedNumbers.size < 5) {
+				selectedNumbers.add(i);
+				numberDiv.classList.add('selected');
+			}
+			updateSelectedNumbers();
+		});
+
+		grid.appendChild(numberDiv);
+	}
+
+	// 선택한 숫자 업데이트
+	function updateSelectedNumbers() {
+		let selectedArray = Array.from(selectedNumbers).sort((a, b) => a - b);
+		selectedNumbersDiv.innerHTML = selectedArray.length > 0
+			? selectedArray.map(num => `<span data-number="${num}">${num}</span>`).join(', ')
+			: 'doesn\'t exist';
+
+		// 선택 개수 업데이트
+		selectedCountSpan.textContent = selectedNumbers.size;
+
+		// 최소 5개 선택해야 결과 발표 가능
+		warningText.style.display = selectedNumbers.size < 5 ? 'block' : 'none';
+	}
+
+	// 결과 발표 버튼 클릭 이벤트
+	announceResultButton.addEventListener('click', () => {
+		if (selectedNumbers.size < 5) {
+			warningText.style.display = 'block';
+			return;
+		}
+		warningText.style.display = 'none';
+
+		winningNumbers = generateWinningNumbers();
+		shuffleArray(winningNumbers);
+		announcedNumbers = [];
+		currentIndex = 0;
+		matchedCountDiv.textContent = 'presenting...';
+
+		document.querySelectorAll('.number').forEach(num => num.classList.remove('winner', 'matched'));
+
+		announceNextNumber();
+	});
+
+	// 1.5초마다 당첨 숫자 발표
+	function announceNextNumber() {
+		if (currentIndex < winningNumbers.length) {
+			let number = winningNumbers[currentIndex];
+			announcedNumbers.push(number);
+
+			let numberDiv = document.querySelector(`.number[data-number="${number}"]`);
+			if (numberDiv) numberDiv.classList.add('winner');
+
+			if (selectedNumbers.has(number)) {
+				numberDiv.classList.add('matched');
+
+				document.querySelectorAll('#selectedNumbers span').forEach(span => {
+					let num = parseInt(span.dataset.number);
+					if (num === number) {
+						span.classList.add('circle');
+						span.innerHTML = `${num}`; // 동그라미 추가
+					}
+				});
+			}
+
+			currentIndex++;
+			setTimeout(announceNextNumber, 350);
+		} else {
+			// 발표 완료 후 맞춘 개수 표시
+			let matchedNumbers = [...selectedNumbers].filter(num => winningNumbers.includes(num)).length;
+			matchedCountDiv.textContent = `correct number: ${matchedNumbers}`;
+		}
+	}
+
+	// 리셋 버튼 클릭 이벤트
+	resetButton.addEventListener('click', () => {
+		selectedNumbers.clear();
+		winningNumbers = [];
+		announcedNumbers = [];
+		currentIndex = 0;
+
+		// 숫자 스타일 초기화
+		document.querySelectorAll('.number').forEach(num => num.classList.remove('selected', 'winner', 'matched'));
+
+		// 선택한 숫자 및 결과 초기화
+		updateSelectedNumbers();
+		matchedCountDiv.textContent = 'before presentation';
+		warningText.style.display = 'none';
+	});
+
+	// 랜덤 당첨 숫자 생성
+	function generateWinningNumbers() {
+		let numbers = Array.from({ length: 50 }, (_, i) => i + 1); // 1~60 배열 생성
+		shuffleArray(numbers); // 배열을 섞음
+		return numbers.slice(0, 15); // 앞에서 15개 추출
+	}
+
+	// Fisher-Yates 알고리즘으로 배열 섞기
+	function shuffleArray(array) {
+		for (let i = array.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[array[i], array[j]] = [array[j], array[i]];
+		}
+	}
+
+	document.getElementById('homeButton').addEventListener('click', function() {
+		window.location.href = '/main';
+	});
+</script>
+
+</body>
+</html>
